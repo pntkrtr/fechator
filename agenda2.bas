@@ -45,6 +45,8 @@ Type evento
 	horaFin As String
 	info As String
 	etiquetas As String
+	personas As String
+	lugares As String
 End Type
 ' Variables del programa
 Dim Shared ver As String
@@ -93,7 +95,7 @@ Function seguridad() As String
 	If pwd="123456" And Len(usr)>0 Then
 		usr=Lcase(usr)
 		' Generamos un nombre de archivo
-		nomArchivo = "agenda-" + usr + ".dat"
+		nomArchivo = "agenda-" + usr + "-2.dat"
 		' Si no existe el archivo, lo creamos
 		If Not Fileexists(nomArchivo) then
 			Open nomArchivo For Output As #1: Close #1
