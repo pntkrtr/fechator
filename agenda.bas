@@ -10,6 +10,7 @@
 	- Posible: Interfaz gráfica o modo texto calendario.
 '/
 ' Declaraciones
+Declare Function seguridad As String
 Declare Function numElemBD As Integer
 Declare Sub cargaDatos
 Declare Function rellenaPorLaIzquierda(ByVal valor As Integer, ByVal longitud As Integer, ByVal caracter As String) As String
@@ -24,7 +25,6 @@ Declare Sub muestraListadoEsteAnio
 Declare Sub muestraListadoEntreFechas
 Declare Sub muestraInstrucciones
 Declare Sub muestraGraficos
-Declare Function seguridad As String
 Declare Sub listaCitas
 Declare Sub switchMuestraPasivos
 Declare Sub nuevoEvento
@@ -81,6 +81,35 @@ Print "Gracias por usar el programa."
 Sleep
 End
 ' *** Subrutinas y funciones ***
+' Funcion que comprueba las credenciales y devuelve el usuario si es valido
+Function seguridad() As String
+	Dim As String pwd
+	Cls
+	Input "Usuario:", usr
+	Input "Clave:", pwd
+	If (Ucase(usr)="VICTORM" And pwd="123456") Or (Ucase(usr)="JUANA" And pwd="123456") Then
+		' Generamos un nombre de archivo
+		nomArchivo = "agenda-" + usr + ".dat"
+		' Calculamos en número de elementos del array
+		maximo = numElemBD
+		' Dimensionamos el array para la carga de datos y lo compartimos
+		Redim ev(maximo)
+		' Cargamos los datos en el array
+		cargaDatos
+		' Ordenamos el array de datos cargado
+		ordenaArray
+		' Mostramos los datos del primer registro
+		posicion = 0
+		refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fecha, ev(posicion).hora, ev(posicion).info)
+		Return usr
+	Else
+		Cls 
+		Print "Calendario y Agenda. Alfa concept preview. " + ver + ". Víctor M. Espinosa)"
+		Print "Usuario o clave incorrectos. Finalizando la aplicacion."
+		Print "Gracias por intentar usar el programa."
+		End
+	End If
+End Function
 ' Funcion que llama a las subrutinas que componen la pantalla
 Sub refrescaPantalla(ByVal id As Integer, ByVal activo As Integer, ByVal fecha As String, ByVal hora As String, ByVal info As String)
 	muestraCabecera("Calendario y agenda: Recorrido individual de registros")
@@ -254,35 +283,6 @@ End Sub
 Sub muestraGraficos
 	Line (450,5)-(800,140),15,b
 End Sub
-' Funcion que comprueba las credenciales y devuelve el usuario si es valido
-Function seguridad() As String
-	Dim As String pwd
-	Cls
-	Input "Usuario:", usr
-	Input "Clave:", pwd
-	If (Ucase(usr)="VICTORM" And pwd="123456") Or (Ucase(usr)="JUANA" And pwd="123456") Then
-		' Generamos un nombre de archivo
-		nomArchivo = "agenda-" + usr + ".dat"
-		' Calculamos en número de elementos del array
-		maximo = numElemBD
-		' Dimensionamos el array para la carga de datos y lo compartimos
-		Redim ev(maximo)
-		' Cargamos los datos en el array
-		cargaDatos
-		' Ordenamos el array de datos cargado
-		ordenaArray
-		' Mostramos los datos del primer registro
-		posicion = 0
-		refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fecha, ev(posicion).hora, ev(posicion).info)
-		Return usr
-	Else
-		Cls 
-		Print "Calendario y Agenda. Alfa concept preview. " + ver + ". Víctor M. Espinosa)"
-		Print "Usuario o clave incorrectos. Finalizando la aplicacion."
-		Print "Gracias por intentar usar el programa."
-		End
-	End If
-End Function
 Sub switchMuestraPasivos
 	if muestraPasivos = 0 Then muestraPasivos = 1 Else muestraPasivos = 0
 	' Calculamos en número de elementos del array
