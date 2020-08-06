@@ -52,7 +52,6 @@ End Type
 Dim Shared ver As String
 Dim Shared usr As String
 Dim Shared nomArchivo As String
-Dim Shared maximo As Integer
 Dim Shared posicion As Integer
 Dim Shared muestraPasivos As Integer = 1
 Redim Shared ev() As evento
@@ -67,7 +66,7 @@ Dim entrada As String
 Do While Not (entrada = "Q" Or entrada = Chr(27))
 entrada = UCASE(inkey())
 IF entrada = "A" And posicion>0 Then posicion=posicion-1:refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
-IF entrada = "D" And posicion<maximo-1 Then posicion=posicion+1:refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
+IF entrada = "D" And posicion<Ubound(ev) Then posicion=posicion+1:refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
 IF entrada = "U" Then usr=seguridad:refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
 If entrada = "L" Then muestraListado
 If entrada = "T" Then muestraListadoHoy
@@ -101,7 +100,7 @@ Function seguridad() As String
 			Open nomArchivo For Output As #1: Close #1
 		End If
 		' Calculamos en número de elementos del array
-		maximo = numElemBD
+		Dim maximo As Integer = numElemBD
 		' Dimensionamos el array para la carga de datos y lo compartimos
 		Redim ev(maximo)
 		' Cargamos los datos en el array
@@ -142,11 +141,11 @@ Sub cargaDatos
 		Dim activoTmp As Integer
 		Dim As String fechaTmp, horaTmp, infoTmp
 		Input #1, activoTmp, fechaTmp, horaTmp, infoTmp
-			ev(posicion).activo=activoTmp
-			ev(posicion).fechaInicio=fechaTmp
-			ev(posicion).horaInicio=horaTmp
-			ev(posicion).info=infoTmp
-			posicion = posicion + 1
+		ev(posicion).activo=activoTmp
+		ev(posicion).fechaInicio=fechaTmp
+		ev(posicion).horaInicio=horaTmp
+		ev(posicion).info=infoTmp
+		posicion = posicion + 1
 	Wend
 	Close #1
 End Sub
@@ -160,7 +159,7 @@ End Sub
 ' Funcion que saca el listado de citas y llama al resto de las subrutinas que componen la pantalla
 Sub muestraListado
 	muestraCabecera("Calendario y agenda: Listado de registros")
-	For id As Integer = 0 To maximo-1
+	For id As Integer = 0 To Ubound(ev)
 		muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
 	Next
 	muestraInstrucciones
@@ -169,7 +168,7 @@ End Sub
 ' Funcion que saca el listado de citas de hoy y llama al resto de las subrutinas que componen la pantalla
 Sub muestraListadoHoy
 	muestraCabecera("Calendario y agenda: Listado de hoy")
-	For id As Integer = 0 To maximo-1
+	For id As Integer = 0 To Ubound(ev)
 		' Comprobamos la correspondencia con el día de hoy
 		If (panio(ev(id).fechaInicio)=Str(Year(Now)) Or panio(ev(id).fechaInicio)="0000") _
 			And (pmes(ev(id).fechaInicio)=Str(rellenaPorLaIzquierda(Month(Now),2,"0")) Or pmes(ev(id).fechaInicio)="00") _
@@ -183,7 +182,7 @@ End Sub
 ' Funcion que saca el listado de citas de esta semana y llama al resto de las subrutinas que componen la pantalla
 Sub muestraListadoEstaSemana
 	muestraCabecera("Calendario y agenda: Listado de esta semana")
-	For id As Integer = 0 To maximo-1
+	For id As Integer = 0 To Ubound(ev)
 		' Comprobamos la correspondencia con esta semana (Falta incluir eventos repetitivos)
 		If DateValue(ev(id).fechaInicio)>=Now And DateValue(ev(id).fechaInicio)<=Now+7 Then
 				muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
@@ -195,7 +194,7 @@ End Sub
 ' Funcion que saca el listado de citas de este mes y llama al resto de las subrutinas que componen la pantalla
 Sub muestraListadoEsteMes
 	muestraCabecera("Calendario y agenda: Listado de este mes")
-	For id As Integer = 0 To maximo-1
+	For id As Integer = 0 To Ubound(ev)
 		' Comprobamos la correspondencia con este mes
 		If (panio(ev(id).fechaInicio)=Str(Year(Now)) Or panio(ev(id).fechaInicio)="0000") _
 			And (pmes(ev(id).fechaInicio)=Str(rellenaPorLaIzquierda(Month(Now),2,"0")) Or pmes(ev(id).fechaInicio)="00") Then 
@@ -208,7 +207,7 @@ End Sub
 ' Funcion que saca el listado de citas de este anio y llama al resto de las subrutinas que componen la pantalla
 Sub muestraListadoEsteAnio
 	muestraCabecera("Calendario y agenda: Listado de este anio")
-	For id As Integer = 0 To maximo-1
+	For id As Integer = 0 To Ubound(ev)
 		' Comprobamos la correspondencia con este anio
 		If (panio(ev(id).fechaInicio)=Str(Year(Now)) Or panio(ev(id).fechaInicio)="0000") Then
 			muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
@@ -230,7 +229,7 @@ Sub muestraListadoEntreFechas
 		Input "Fecha fin    (dd/mm/yyyy): ", fechaInicio_fin
 		If isDate(fechaInicio_fin)=0 Then Print "Fecha incorrecta. Escriba una fecha valida."
 	Wend
-	For id As Integer = 0 To maximo-1
+	For id As Integer = 0 To Ubound(ev)
 		' Comprobamos la correspondencia con esta semana (Falta incluir casos repetitivos)
 		If DateValue(ev(id).fechaInicio)>=DateValue(fechaInicio_inicio) And DateValue(ev(id).fechaInicio)<=DateValue(fechaInicio_fin) Then
 				muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
@@ -270,33 +269,31 @@ Sub muestraDatos(ByVal id As Integer, ByVal activo As Integer, ByVal fecha As St
 End Sub
 ' Subrutina que muestra instrucciones
 Sub muestraInstrucciones()
-	Locate 3,60:Print "Usuario conectado: " ; usr
-	Locate 4,60:Print "Numero de registros cargados:" ; maximo
-	Locate 5,60:Print "Posicion actual:" ; posicion
-	Locate 6,60:Print "Q o ESC para terminar el programa"
-	Locate 7,60:Print "U para cerrar sesion"
-	Locate 8,60:Print "A y D para desplazarse por los registros"
-	Locate 9,60:Print "L para un listado de todas las citas"
-	Locate 10,60:Print "T para ver las citas de hoy"
-	Locate 11,60:Print "W para ver las citas de hoy a una semana"
-	Locate 12,60:Print "M para ver las citas de este mes"
-	Locate 13,60:Print "Y para ver las citas de este anio"
-	Locate 14,60:Print "C para ver las citas entre dos fechas"
-	Locate 15,60:Print "O para mostrar/ocultar pasivos: " ; 
+	Locate 59,60:Print "Usuario conectado: " ; usr
+	Locate 60,60:Print "Numero de registros cargados:" ; Ubound(ev)
+	Locate 61,60:Print "Posicion actual:" ; posicion
+	Locate 62,60:Print "Q o ESC para terminar el programa"
+	Locate 63,60:Print "U para cerrar sesion"
+	Locate 64,60:Print "A y D para desplazarse por los registros"
+	Locate 65,60:Print "L para un listado de todas las citas"
+	Locate 66,60:Print "T para ver las citas de hoy"
+	Locate 67,60:Print "W para ver las citas de hoy a una semana"
+	Locate 68,60:Print "M para ver las citas de este mes"
+	Locate 69,60:Print "Y para ver las citas de este anio"
+	Locate 70,60:Print "C para ver las citas entre dos fechas"
+	Locate 71,60:Print "O para mostrar/ocultar pasivos: " ; 
 	If muestraPasivos=1 Then Print "ON" Else Print "OFF"
-	Locate 16,60:Print "N para registrar nuevo evento"
-	Locate 17,60:Print "H para informacion completa."
+	Locate 72,60:Print "N para registrar nuevo evento"
+	Locate 73,60:Print "H para informacion completa."
 End Sub
 ' Subrutnia que muestra graficos
 Sub muestraGraficos
-	Line (450,5)-(800,140),15,b
+	Line (450,450)-(800,595),15,b
 End Sub
 Sub switchMuestraPasivos
 	if muestraPasivos = 0 Then muestraPasivos = 1 Else muestraPasivos = 0
-	' Calculamos en número de elementos del array
-	maximo = numElemBD
-	' Dimensionamos el array para la carga de datos y lo compartimos
-	Redim ev(maximo)
+	' Dimensionamos el array con el número de elementos
+	Redim ev(numElemBD)
 	' Cargamos los datos en el array
 	cargaDatos
 	' Mostramos los datos del primer registro
@@ -308,9 +305,50 @@ Sub nuevoEvento
 	Cls
 	Print "Registro de nuevo evento (En construccion)"
 	' Recoge datos
-	' Escribe en el archivo
+	Dim miEvento As evento
+	' --- Hay que ir validando los valores introducidos
+	Input "Activo (0-1)";miEvento.activo
+	Input "Completado (0-1)";miEvento.completado
+	Input "Fecha de incicio (dd/mm/aaaa)";miEvento.fechaInicio
+	Input "Hora de inicio (hh:mm)";miEvento.horaInicio
+	Input "Fecha de fin (dd/mm/aaaa)";miEvento.fechaFin
+	Input "Hora de fin (hh:mm)";miEvento.horaFin
+	Input "Información: ",miEvento.info
+	Input "Etiquetas (etiqueta1|etiqueta2|etiqueta3|...: ",miEvento.etiquetas
+	Input "Personas (persona1|persona2|persona3|...): ",miEvento.personas
+	Input "Lugares (lugar1|lugar2|lugar3|...): ",miEvento.lugares
 	' Actualiza array
+	Dim eventoTemporal(Ubound(ev)+1) As evento
+	For id As Integer = Lbound(ev) To Ubound(ev)
+		eventoTemporal(id) = ev(id)
+	Next
+	eventoTemporal(Ubound(ev)+1) = miEvento
+	Redim ev(Ubound(eventoTemporal))
+	For id As Integer = Lbound(ev) To Ubound(ev)
+		ev(id) = eventoTemporal(id)
+	Next
+	' Renombramos el archivo antiguo como backup
+	Dim nuevoNombreArchivo As String = nomArchivo + "." + Str(Now)
+	Dim result As Integer = Name ( nomArchivo , nuevoNombreArchivo )
+	If result <> 0  Then 
+		Print  "Fallo al cambiar el nombre del archivo" 
+		Sleep()
+	End If
+	' Creamos un nuevo archivo
+	If Not Fileexists(nomArchivo) then
+		Open nomArchivo For Output As #1
+	Else
+		Print "No se ha podido crear el archivo porque ya existe"
+		Close #1
+		Sleep()
+	End If
+	' Escribe en el archivo
+	For id As Integer = 1 To Ubound(ev)
+		Print #1, Str(ev(id).activo) + "," + ev(id).fechaInicio + "," + ev(id).horaInicio + "," + Chr(34) + ev(id).info + Chr(34)
+	Next
+	Close #1
 	' Ordena el array
+	 ordenaArray
 	' Recarga Vista
 	Sleep
 	refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
@@ -326,8 +364,8 @@ End Sub
 ' Ordenamos el array por fecha
 Sub ordenaArray
 	' Algoritmo de ordenación
-	For n As Integer = Lbound(ev) To Ubound(ev)
-		For i As Integer = Lbound(ev) To Ubound(ev)-2
+	For n As Integer = Lbound(ev) To Ubound(ev)-1
+		For i As Integer = Lbound(ev) To Ubound(ev)-1
 			If Val(cadenaNormalizadaFechaHora(ev(i).fechaInicio,ev(i).horaInicio)) > _ 
 				Val(cadenaNormalizadaFechaHora(ev(i+1).fechaInicio,ev(i+1).horaInicio)) Then Swap ev(i), ev(i+1)
 		Next
