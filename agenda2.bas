@@ -65,7 +65,7 @@ ver = "20200712"
 Dim entrada As String
 Do While Not (entrada = "Q" Or entrada = Chr(27))
 entrada = UCASE(inkey())
-IF entrada = "A" And posicion>0 Then posicion=posicion-1:refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
+IF entrada = "A" And posicion>Lbound(ev)+1 Then posicion=posicion-1:refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
 IF entrada = "D" And posicion<Ubound(ev) Then posicion=posicion+1:refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
 IF entrada = "U" Then usr=seguridad:refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
 If entrada = "L" Then muestraListado
@@ -108,7 +108,7 @@ Function seguridad() As String
 		' Ordenamos el array de datos cargado
 		ordenaArray
 		' Mostramos los datos del primer registro
-		posicion = 0
+		posicion = 1
 		refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
 		Return usr
 	Else
@@ -122,7 +122,6 @@ End Function
 ' Funcion que devuelve el numero de elementos de la BD
 Function numElemBD As Integer
 	Open nomArchivo For Input As #1
-	Dim linea As String
 	Dim maximo As Integer = 0
 	While Not Eof(1)
 		Dim activoTmp As Integer
@@ -137,15 +136,17 @@ End Function
 Sub cargaDatos
 	Dim posicion As Integer = 0
 	Open nomArchivo For Input As #1
+	Dim activoTmp As Integer
+	Dim As String fechaTmp, horaTmp, infoTmp
 	While Not Eof(1)
-		Dim activoTmp As Integer
-		Dim As String fechaTmp, horaTmp, infoTmp
 		Input #1, activoTmp, fechaTmp, horaTmp, infoTmp
-		ev(posicion).activo=activoTmp
-		ev(posicion).fechaInicio=fechaTmp
-		ev(posicion).horaInicio=horaTmp
-		ev(posicion).info=infoTmp
-		posicion = posicion + 1
+		If activoTmp = 1 Or muestraPasivos = 1 Then
+			ev(posicion).activo=activoTmp
+			ev(posicion).fechaInicio=fechaTmp
+			ev(posicion).horaInicio=horaTmp
+			ev(posicion).info=infoTmp
+			posicion = posicion + 1
+		End If
 	Wend
 	Close #1
 End Sub
@@ -159,7 +160,7 @@ End Sub
 ' Funcion que saca el listado de citas y llama al resto de las subrutinas que componen la pantalla
 Sub muestraListado
 	muestraCabecera("Calendario y agenda: Listado de registros")
-	For id As Integer = 0 To Ubound(ev)
+	For id As Integer = Lbound(ev)+1 To Ubound(ev)
 		muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
 	Next
 	muestraInstrucciones
@@ -168,7 +169,7 @@ End Sub
 ' Funcion que saca el listado de citas de hoy y llama al resto de las subrutinas que componen la pantalla
 Sub muestraListadoHoy
 	muestraCabecera("Calendario y agenda: Listado de hoy")
-	For id As Integer = 0 To Ubound(ev)
+	For id As Integer = Lbound(ev)+1 To Ubound(ev)
 		' Comprobamos la correspondencia con el día de hoy
 		If (panio(ev(id).fechaInicio)=Str(Year(Now)) Or panio(ev(id).fechaInicio)="0000") _
 			And (pmes(ev(id).fechaInicio)=Str(rellenaPorLaIzquierda(Month(Now),2,"0")) Or pmes(ev(id).fechaInicio)="00") _
@@ -182,7 +183,7 @@ End Sub
 ' Funcion que saca el listado de citas de esta semana y llama al resto de las subrutinas que componen la pantalla
 Sub muestraListadoEstaSemana
 	muestraCabecera("Calendario y agenda: Listado de esta semana")
-	For id As Integer = 0 To Ubound(ev)
+	For id As Integer = Lbound(ev)+1 To Ubound(ev)
 		' Comprobamos la correspondencia con esta semana (Falta incluir eventos repetitivos)
 		If DateValue(ev(id).fechaInicio)>=Now And DateValue(ev(id).fechaInicio)<=Now+7 Then
 				muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
@@ -194,7 +195,7 @@ End Sub
 ' Funcion que saca el listado de citas de este mes y llama al resto de las subrutinas que componen la pantalla
 Sub muestraListadoEsteMes
 	muestraCabecera("Calendario y agenda: Listado de este mes")
-	For id As Integer = 0 To Ubound(ev)
+	For id As Integer = Lbound(ev)+1 To Ubound(ev)
 		' Comprobamos la correspondencia con este mes
 		If (panio(ev(id).fechaInicio)=Str(Year(Now)) Or panio(ev(id).fechaInicio)="0000") _
 			And (pmes(ev(id).fechaInicio)=Str(rellenaPorLaIzquierda(Month(Now),2,"0")) Or pmes(ev(id).fechaInicio)="00") Then 
@@ -207,7 +208,7 @@ End Sub
 ' Funcion que saca el listado de citas de este anio y llama al resto de las subrutinas que componen la pantalla
 Sub muestraListadoEsteAnio
 	muestraCabecera("Calendario y agenda: Listado de este anio")
-	For id As Integer = 0 To Ubound(ev)
+	For id As Integer = Lbound(ev)+1 To Ubound(ev)
 		' Comprobamos la correspondencia con este anio
 		If (panio(ev(id).fechaInicio)=Str(Year(Now)) Or panio(ev(id).fechaInicio)="0000") Then
 			muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
@@ -229,7 +230,7 @@ Sub muestraListadoEntreFechas
 		Input "Fecha fin    (dd/mm/yyyy): ", fechaInicio_fin
 		If isDate(fechaInicio_fin)=0 Then Print "Fecha incorrecta. Escriba una fecha valida."
 	Wend
-	For id As Integer = 0 To Ubound(ev)
+	For id As Integer = Lbound(ev)+1 To Ubound(ev)
 		' Comprobamos la correspondencia con esta semana (Falta incluir casos repetitivos)
 		If DateValue(ev(id).fechaInicio)>=DateValue(fechaInicio_inicio) And DateValue(ev(id).fechaInicio)<=DateValue(fechaInicio_fin) Then
 				muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
@@ -296,8 +297,10 @@ Sub switchMuestraPasivos
 	Redim ev(numElemBD)
 	' Cargamos los datos en el array
 	cargaDatos
+	' Ordenamos el array
+	ordenaArray
 	' Mostramos los datos del primer registro
-	posicion = 0
+	posicion = 1
 	refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
 End Sub
 ' Registrar nuevo evento
