@@ -1,11 +1,9 @@
 #include "vbcompat.bi" ' Para manejo de fechas
 /' Pendiente:
-	- Al entrar, si el archivo está vacío: comprobar qué sucede
-	- Insertar registro, validar fecha isDate() + ordenar + ¿guardar datos?
+	- Ampliar carga, vistas y guardado a todos los campos del tipo evento
+	- Al insertar registros validar los campos, p.ej. fecha isDate()(pend)
 	- Al salir, hacer copia de seguridad y guardar los datos en el archivo 
 	- Alarmas de eventos cuando en el momento en el que suceden
-	- Posible: Distintos Usuarios
-	- Posible: Múltiples bases de datos por usuario
 	- Posible: Interfaz gráfica o modo texto calendario.
 '/
 ' Declaraciones
