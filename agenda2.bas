@@ -1,9 +1,12 @@
 #include "vbcompat.bi" ' Para manejo de fechas
 /' Pendiente:
-	- Ampliar carga, vistas y guardado a todos los campos del tipo evento
-	- Al insertar registros validar los campos, p.ej. fecha isDate()(pend)
-	- Al salir, hacer copia de seguridad y guardar los datos en el archivo 
-	- Alarmas de eventos cuando en el momento en el que suceden
+	- Al insertar registros validar el campo hora con isDate()
+	- Modificar registros, pasar a pasivo, marchar como hecho, ...
+	- Eliminar registros.
+	- Controlar la lógica de la fecha fin (no puede ser inferior a la inicial, ...)
+	- Opción para forzar el guardado de los datos (puede que no sea necesario)
+	- Al salir, hacer copia de seguridad y guardar los datos en el archivo (puede que no sea necesario)
+	- Alarmas de eventos en el momento en el que suceden
 	- Posible: Interfaz gráfica o modo texto calendario.
 '/
 ' Declaraciones
@@ -11,9 +14,19 @@ Declare Function seguridad As String
 Declare Function numElemBD As Integer
 Declare Sub cargaDatos
 Declare Function rellenaPorLaIzquierda(ByVal valor As Integer, ByVal longitud As Integer, ByVal caracter As String) As String
-Declare Sub refrescaPantalla(ByVal id As Integer, ByVal activo As Integer, ByVal fecha As String, ByVal hora As String, ByVal info As String)
+Declare Sub refrescaPantalla(ByVal id As Integer, _
+	ByVal activo As Integer, ByVal completado As Integer, _
+	ByVal fechaInicio As String, ByVal horaInicio As String, _
+	ByVal fechaFin As String, ByVal horaFin As String, _
+	ByVal info As String, ByVal etiquetas As String, _
+	ByVal personas As String, ByVal lugares As String)
 Declare Sub muestraCabecera(ByVal texto As String)
-Declare Sub muestraDatos(ByVal id As Integer, ByVal activo As Integer, ByVal fecha As String, ByVal hora As String, ByVal info As String)
+Declare Sub muestraDatos(ByVal id As Integer, _
+	ByVal activo As Integer, ByVal completado As Integer, _
+	ByVal fechaInicio As String, ByVal horaInicio As String, _
+	ByVal fechaFin As String, ByVal horaFin As String, _
+	ByVal info As String, ByVal etiquetas As String, _
+	ByVal personas As String, ByVal lugares As String)
 Declare Sub muestraListado
 Declare Sub muestraListadoHoy
 Declare Sub muestraListadoEstaSemana
@@ -63,9 +76,30 @@ ver = "20200712"
 Dim entrada As String
 Do While Not (entrada = "Q" Or entrada = Chr(27))
 entrada = UCASE(inkey())
-IF entrada = "A" And posicion>Lbound(ev)+1 Then posicion=posicion-1:refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
-IF entrada = "D" And posicion<Ubound(ev) Then posicion=posicion+1:refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
-IF entrada = "U" Then usr=seguridad:refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
+IF entrada = "A" And posicion>Lbound(ev)+1 Then 
+	posicion=posicion-1
+	refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).completado, _
+		ev(posicion).fechaInicio, ev(posicion).horaInicio, _
+		ev(posicion).fechaFin, ev(posicion).horaFin, _
+		ev(posicion).info, ev(posicion).etiquetas, _
+		ev(posicion).personas, ev(posicion).lugares)
+End If
+IF entrada = "D" And posicion<Ubound(ev) Then 
+	posicion=posicion+1
+	refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).completado, _
+		ev(posicion).fechaInicio, ev(posicion).horaInicio, _
+		ev(posicion).fechaFin, ev(posicion).horaFin, _
+		ev(posicion).info, ev(posicion).etiquetas, _
+		ev(posicion).personas, ev(posicion).lugares)
+End If
+IF entrada = "U" Then 
+	usr=seguridad
+	refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).completado, _
+		ev(posicion).fechaInicio, ev(posicion).horaInicio, _
+		ev(posicion).fechaFin, ev(posicion).horaFin, _
+		ev(posicion).info, ev(posicion).etiquetas, _
+		ev(posicion).personas, ev(posicion).lugares)
+End If
 If entrada = "L" Then muestraListado
 If entrada = "T" Then muestraListadoHoy
 If entrada = "W" Then muestraListadoEstaSemana
@@ -107,7 +141,11 @@ Function seguridad() As String
 		ordenaArray
 		' Mostramos los datos del primer registro
 		posicion = 1
-		refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
+		refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).completado, _
+			ev(posicion).fechaInicio, ev(posicion).horaInicio, _
+			ev(posicion).fechaFin, ev(posicion).horaFin, _
+			ev(posicion).info, ev(posicion).etiquetas, _
+			ev(posicion).personas, ev(posicion).lugares)
 		Return usr
 	Else
 		Cls 
@@ -122,9 +160,14 @@ Function numElemBD As Integer
 	Open nomArchivo For Input As #1
 	Dim maximo As Integer = 0
 	While Not Eof(1)
-		Dim activoTmp As Integer
-		Dim As String fechaTmp, horaTmp, infoTmp
-		Input #1, activoTmp, fechaTmp, horaTmp, infoTmp
+		Dim As Integer activoTmp, completadoTmp
+		Dim As String fechaInicioTmp, horaInicioTmp, fechaFinTmp, horaFinTmp
+		Dim As String infoTmp, etiquetasTmp, personasTmp, lugaresTmp
+		Input #1, activoTmp, completadoTmp, _
+			fechaInicioTmp, horaInicioTmp, _
+			fechaFinTmp, horaFinTmp, _
+			infoTmp, etiquetasTmp, _
+			personasTmp, lugaresTmp
 		If activoTmp = 1 Or muestraPasivos = 1 Then maximo = maximo + 1
 	Wend
 	Close #1
@@ -134,24 +177,44 @@ End Function
 Sub cargaDatos
 	Dim posicion As Integer = 0
 	Open nomArchivo For Input As #1
-	Dim activoTmp As Integer
-	Dim As String fechaTmp, horaTmp, infoTmp
+	Dim As Integer activoTmp, completadoTmp
+	Dim As String fechaInicioTmp, horaInicioTmp, fechaFinTmp, horaFinTmp
+	Dim As String infoTmp, etiquetasTmp, personasTmp, lugaresTmp
 	While Not Eof(1)
-		Input #1, activoTmp, fechaTmp, horaTmp, infoTmp
+		Input #1, activoTmp, completadoTmp, _
+			fechaInicioTmp, horaInicioTmp, _
+			fechaFinTmp, horaFinTmp, _
+			infoTmp, etiquetasTmp, _
+			personasTmp, lugaresTmp
 		If activoTmp = 1 Or muestraPasivos = 1 Then
-			ev(posicion).activo=activoTmp
-			ev(posicion).fechaInicio=fechaTmp
-			ev(posicion).horaInicio=horaTmp
-			ev(posicion).info=infoTmp
+			ev(posicion).activo = activoTmp
+			ev(posicion).completado = completadoTmp
+			ev(posicion).fechaInicio = fechaInicioTmp
+			ev(posicion).horaInicio = horaInicioTmp
+			ev(posicion).fechaFin = fechaFinTmp
+			ev(posicion).horaFin = horaFinTmp
+			ev(posicion).info = infoTmp
+			ev(posicion).etiquetas = etiquetasTmp
+			ev(posicion).personas = personasTmp
+			ev(posicion).lugares = lugaresTmp
 			posicion = posicion + 1
 		End If
 	Wend
 	Close #1
 End Sub
 ' Funcion que llama a las subrutinas que componen la pantalla
-Sub refrescaPantalla(ByVal id As Integer, ByVal activo As Integer, ByVal fecha As String, ByVal hora As String, ByVal info As String)
+Sub refrescaPantalla(ByVal id As Integer, _
+	ByVal activo As Integer, ByVal completado As Integer, _
+	ByVal fechaInicio As String, ByVal horaInicio As String, _
+	ByVal fechaFin As String, ByVal horaFin As String, _
+	ByVal info As String, ByVal etiquetas As String, _
+	ByVal personas As String, ByVal lugares As String)
 	muestraCabecera("Calendario y agenda: Recorrido individual de registros")
-	muestraDatos id, activo, fecha, hora, info
+	muestraDatos id, activo, completado, _
+			fechaInicio, horaInicio, _
+			fechaFin, horaFin, _
+			info, etiquetas, _
+			personas, lugares
 	muestraInstrucciones
 	muestraGraficos
 End Sub
@@ -159,7 +222,11 @@ End Sub
 Sub muestraListado
 	muestraCabecera("Calendario y agenda: Listado de registros")
 	For id As Integer = Lbound(ev)+1 To Ubound(ev)
-		muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
+		muestraDatos id, ev(id).activo, ev(id).completado, _
+			ev(id).fechaInicio, ev(id).horaInicio, _
+			ev(id).fechaFin, ev(id).horaFin, _
+			ev(id).info, ev(id).etiquetas, _
+			ev(id).personas, ev(id).lugares
 	Next
 	muestraInstrucciones
 	muestraGraficos
@@ -172,7 +239,11 @@ Sub muestraListadoHoy
 		If (panio(ev(id).fechaInicio)=Str(Year(Now)) Or panio(ev(id).fechaInicio)="0000") _
 			And (pmes(ev(id).fechaInicio)=Str(rellenaPorLaIzquierda(Month(Now),2,"0")) Or pmes(ev(id).fechaInicio)="00") _
 			And	pdia(ev(id).fechaInicio)=Str(rellenaPorLaIzquierda(Day(Now),2,"0")) Then
-				muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
+				muestraDatos id, ev(id).activo, ev(id).completado, _
+					ev(id).fechaInicio, ev(id).horaInicio, _
+					ev(id).fechaFin, ev(id).horaFin, _
+					ev(id).info, ev(id).etiquetas, _
+					ev(id).personas, ev(id).lugares
 		End If
 	Next
 	muestraInstrucciones
@@ -184,7 +255,11 @@ Sub muestraListadoEstaSemana
 	For id As Integer = Lbound(ev)+1 To Ubound(ev)
 		' Comprobamos la correspondencia con esta semana (Falta incluir eventos repetitivos)
 		If DateValue(ev(id).fechaInicio)>=Now And DateValue(ev(id).fechaInicio)<=Now+7 Then
-				muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
+				muestraDatos id, ev(id).activo, ev(id).completado, _
+					ev(id).fechaInicio, ev(id).horaInicio, _
+					ev(id).fechaFin, ev(id).horaFin, _
+					ev(id).info, ev(id).etiquetas, _
+					ev(id).personas, ev(id).lugares
 		End If
 	Next
 	muestraInstrucciones
@@ -197,7 +272,11 @@ Sub muestraListadoEsteMes
 		' Comprobamos la correspondencia con este mes
 		If (panio(ev(id).fechaInicio)=Str(Year(Now)) Or panio(ev(id).fechaInicio)="0000") _
 			And (pmes(ev(id).fechaInicio)=Str(rellenaPorLaIzquierda(Month(Now),2,"0")) Or pmes(ev(id).fechaInicio)="00") Then 
-			muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
+			muestraDatos id, ev(id).activo, ev(id).completado, _
+				ev(id).fechaInicio, ev(id).horaInicio, _
+				ev(id).fechaFin, ev(id).horaFin, _
+				ev(id).info, ev(id).etiquetas, _
+				ev(id).personas, ev(id).lugares
 		End If
 	Next
 	muestraInstrucciones
@@ -209,7 +288,11 @@ Sub muestraListadoEsteAnio
 	For id As Integer = Lbound(ev)+1 To Ubound(ev)
 		' Comprobamos la correspondencia con este anio
 		If (panio(ev(id).fechaInicio)=Str(Year(Now)) Or panio(ev(id).fechaInicio)="0000") Then
-			muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
+			muestraDatos id, ev(id).activo, ev(id).completado, _
+				ev(id).fechaInicio, ev(id).horaInicio, _
+				ev(id).fechaFin, ev(id).horaFin, _
+				ev(id).info, ev(id).etiquetas, _
+				ev(id).personas, ev(id).lugares
 		End If
 	Next
 	muestraInstrucciones
@@ -231,7 +314,11 @@ Sub muestraListadoEntreFechas
 	For id As Integer = Lbound(ev)+1 To Ubound(ev)
 		' Comprobamos la correspondencia con esta semana (Falta incluir casos repetitivos)
 		If DateValue(ev(id).fechaInicio)>=DateValue(fechaInicio_inicio) And DateValue(ev(id).fechaInicio)<=DateValue(fechaInicio_fin) Then
-				muestraDatos id, ev(id).activo, ev(id).fechaInicio, ev(id).horaInicio, ev(id).info
+			muestraDatos id, ev(id).activo, ev(id).completado, _
+				ev(id).fechaInicio, ev(id).horaInicio, _
+				ev(id).fechaFin, ev(id).horaFin, _
+				ev(id).info, ev(id).etiquetas, _
+				ev(id).personas, ev(id).lugares
 		End If
 	Next
 	muestraInstrucciones
@@ -256,14 +343,28 @@ Sub muestraCabecera(ByVal texto As String)
 	Print
 End Sub
 ' Subrutina que muestra los datos
-Sub muestraDatos(ByVal id As Integer, ByVal activo As Integer, ByVal fecha As String, ByVal hora As String, ByVal info As String)
+Sub muestraDatos(ByVal id As Integer, _
+	ByVal activo As Integer, ByVal completado As Integer, _
+	ByVal fechaInicio As String, ByVal horaInicio As String, _
+	ByVal fechaFin As String, ByVal horaFin As String, _
+	ByVal info As String, ByVal etiquetas As String, _
+	ByVal personas As String, ByVal lugares As String)
 	If activo=1 Or muestraPasivos=1 Then 
-		Color 6:Print rellenaPorLaIzquierda(id, 3, " ") ; 
-		Color 7:Print " | " ; activo ; "| " ; 
+		Color 6:Print rellenaPorLaIzquierda(id, 3, " ") ;
+		Color 7:Print " | " ; activo ; "| " ; completado ; "| " ; 
 		if activo=1 then Color 10 Else Color 14
-		Print fecha ; " - " ; hora ; 
+		Print fechaInicio ; " - " ; horaInicio ; 
+		Color 7:Print " | " ; 
+		if activo=1 then Color 10 Else Color 14
+		Print fechaFin ; " - " ; horaFin ; 
 		Color 7:Print " | " ; 
 		Color 31: Print info
+		Color 7:Print " | " ; 
+		Color 31: Print etiquetas ;
+		Color 7:Print " | " ; 
+		Color 31: Print personas ;
+		Color 7:Print " | " ; 
+		Color 31: Print lugares
 	End If
 End Sub
 ' Subrutina que muestra instrucciones
@@ -299,7 +400,11 @@ Sub switchMuestraPasivos
 	ordenaArray
 	' Mostramos los datos del primer registro
 	posicion = 1
-	refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
+	refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).completado, _
+			ev(posicion).fechaInicio, ev(posicion).horaInicio, _
+			ev(posicion).fechaFin, ev(posicion).horaFin, _
+			ev(posicion).info, ev(posicion).etiquetas, _
+			ev(posicion).personas, ev(posicion).lugares)
 End Sub
 ' Registrar nuevo evento
 Sub nuevoEvento
@@ -308,16 +413,33 @@ Sub nuevoEvento
 	' Recoge datos
 	Dim miEvento As evento
 	' --- Hay que ir validando los valores introducidos
-	Input "Activo (0-1)";miEvento.activo
-	Input "Completado (0-1)";miEvento.completado
-	Input "Fecha de incicio (dd/mm/aaaa)";miEvento.fechaInicio
-	Input "Hora de inicio (hh:mm)";miEvento.horaInicio
-	Input "Fecha de fin (dd/mm/aaaa)";miEvento.fechaFin
-	Input "Hora de fin (hh:mm)";miEvento.horaFin
-	Input "Información: ",miEvento.info
-	Input "Etiquetas (etiqueta1|etiqueta2|etiqueta3|...: ",miEvento.etiquetas
-	Input "Personas (persona1|persona2|persona3|...): ",miEvento.personas
-	Input "Lugares (lugar1|lugar2|lugar3|...): ",miEvento.lugares
+	Do
+		Input "Activo (0-1)" ; miEvento.activo
+		If miEvento.activo < 0 Or miEvento.activo > 1 Then Print "Debe introducir un valor dentro del rango"
+	Loop While miEvento.activo < 0 Or miEvento.activo > 1
+	Do 
+		Input "Completado (0-1)" ; miEvento.completado
+	If miEvento.completado < 0 Or miEvento.completado > 1 Then Print "Debe introducir un valor dentro del rango"
+	Loop While miEvento.activo < 0 Or miEvento.activo > 1
+	Do
+		Input "Fecha de incicio (dd/mm/aaaa)" ; miEvento.fechaInicio
+		If Not IsDate(miEvento.fechaInicio) Then Print "Debe introducir una fecha correcta"
+	Loop While Not IsDate(miEvento.fechaInicio)
+	' --- Comprobar si la hora introducida es válida
+	Input "Hora de inicio (hh:mm)" ; miEvento.horaInicio
+	Do 
+		Input "Fecha de fin (dd/mm/aaaa)"; miEvento.fechaFin
+		If Not IsDate(miEvento.fechaFin) Then Print "Debe introducir una fecha correcta"
+	Loop While Not IsDate(miEvento.fechaFin)
+	' --- Comprobar si la hora introducida es válida
+	Input "Hora de fin (hh:mm)" ; miEvento.horaFin
+	Do 
+		Input "Información: " , miEvento.info
+		If miEvento.info = "" Then Print "Debe introducir algún texto para el evento"
+	Loop While miEvento.info = ""
+	Input "Etiquetas (etiqueta1|etiqueta2|etiqueta3|...: " , miEvento.etiquetas
+	Input "Personas (persona1|persona2|persona3|...): " , miEvento.personas
+	Input "Lugares (lugar1|lugar2|lugar3|...): " , miEvento.lugares
 	' Actualiza array
 	Dim eventoTemporal(Ubound(ev)+1) As evento
 	For id As Integer = Lbound(ev) To Ubound(ev)
@@ -345,14 +467,22 @@ Sub nuevoEvento
 	End If
 	' Escribe en el archivo
 	For id As Integer = 1 To Ubound(ev)
-		Print #1, Str(ev(id).activo) + "," + ev(id).fechaInicio + "," + ev(id).horaInicio + "," + Chr(34) + ev(id).info + Chr(34)
+		Print #1, Str(ev(id).activo) + "," + Str(ev(id).completado) + "," _
+			+ ev(id).fechaInicio + "," + ev(id).horaInicio + "," _
+			+ ev(id).fechaFin + "," + ev(id).horaFin + "," + Chr(34) + ev(id).info + Chr(34) _
+			+ "," + Chr(34) + ev(id).etiquetas + Chr(34) + "," + Chr(34) + ev(id).personas + Chr(34) _
+			+ "," + Chr(34) + ev(id).lugares + Chr(34)
 	Next
 	Close #1
 	' Ordena el array
 	 ordenaArray
 	' Recarga Vista
 	Sleep
-	refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
+	refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).completado, _
+			ev(posicion).fechaInicio, ev(posicion).horaInicio, _
+			ev(posicion).fechaFin, ev(posicion).horaFin, _
+			ev(posicion).info, ev(posicion).etiquetas, _
+			ev(posicion).personas, ev(posicion).lugares)
 End Sub
 ' Mostramos información de interés
 Sub Ayuda
@@ -360,7 +490,11 @@ Sub Ayuda
 	Print "Calendario y Agenda. Alfa concept preview. " + ver + ". Victor M. Espinosa"
 	Print "Informacion de interes"
 	Sleep
-	refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).fechaInicio, ev(posicion).horaInicio, ev(posicion).info)
+	refrescaPantalla(posicion, ev(posicion).activo, ev(posicion).completado, _
+			ev(posicion).fechaInicio, ev(posicion).horaInicio, _
+			ev(posicion).fechaFin, ev(posicion).horaFin, _
+			ev(posicion).info, ev(posicion).etiquetas, _
+			ev(posicion).personas, ev(posicion).lugares)
 End Sub
 ' Ordenamos el array por fecha
 Sub ordenaArray
